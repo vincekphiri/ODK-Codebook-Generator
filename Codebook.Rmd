@@ -1,0 +1,108 @@
+---
+title: "NTPLEP ACF Campaign Form Codebook"
+author: "Vincent Katunga-Phiri"
+date: "2025-03-26"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r libraries_load, include=FALSE}
+#This Line clears the memory and loads/installs all the necessary packages
+#Clear memory and objects from work space
+rm(list = ls())
+gc()
+
+#Load/Install Required libraries using pacman library
+if (!require(pacman)) {
+  install.packages("pacman", repos = "https://cran.r-project.org")
+  library(pacman)
+}
+if (!require(tidyverse))
+  install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if (!require(readxl))
+  install.packages("readxl", repos = "http://cran.us.r-project.org")
+if (!require(knitr))
+  install.packages("knitr", repos = "http://cran.us.r-project.org")
+if (!require(kableExtra))
+  install.packages("kableExtra", repos = "http://cran.us.r-project.org")
+if (!require(rmarkdown))
+  install.packages("rmarkdown", repos = "http://cran.us.r-project.org")
+
+pacman::p_load(tidyverse, readxl, knitr, kableExtra, rmarkdown)
+```
+
+```{r xlsx_form_load, include=FALSE}
+#Read the Excel file (ODK form)
+file_path <- "C:/Users/vphiri/Documents/OdkCodebookGenerator/OdkCodebookGenerator/OdkCodebookGenerator/BCGC02_Visitsv01.xlsx"
+survey <- read_excel(file_path, sheet = "survey")
+choices <- read_excel(file_path, sheet = "choices")
+```
+
+```{r xlsx_wrangle, include=FALSE}
+#Extract relevant information from the survey sheet
+survey_filtered <- survey %>%
+  select(type, name, `label`) %>%
+  mutate(data_type = sub(" .*", "", type))
+
+#Extract the list names for categorical questions
+survey_filtered <- survey_filtered %>%
+  mutate(list_name = ifelse(grepl("select_one|select_multiple", type), sub(".*\\s(.*)", "\\1", type), NA))
+
+#Prepare the choices data
+choices_filtered <- choices %>%
+  select(list_name = `list_name`, choice_name = name, choice_label = label)
+
+#Join the survey and choices data
+codebook <- survey_filtered %>%
+  left_join(choices_filtered, by = "list_name")
+
+#Handle missing values
+codebook <- codebook %>%
+  mutate(
+    choice_name = ifelse(is.na(choice_name), data_type, choice_name),
+    choice_label = ifelse(is.na(choice_label), data_type, choice_label)
+  )
+
+#Format the table for the codebook
+codebook_table <- codebook %>%
+  select(Label = `label`, Variable = name, data_type, Response = choice_name, Response_Label = choice_label) %>%
+  arrange(Variable)
+
+#Merge cells for labels
+codebook_table <- codebook_table %>%
+  group_by(Variable) %>%
+  mutate(Label = ifelse(row_number() == 1, Label, NA)) %>%
+  ungroup()
+
+#Remove rows with data_types value equal to 'begin' and 'end' since these are groups in ODK
+#THEN group the rows into one row basing on the column variable. In ODK, only unique variables are allowed.
+codebook_grouped <- codebook_table %>%
+  filter(data_type!='begin') %>% 
+  filter(data_type!='end') %>% 
+  group_by(Variable) %>%
+  summarise(
+    Label = first(Label), 
+    data_type = first(data_type), 
+    Response = paste(unique(Response), collapse = ", "), 
+    Response_Label = paste(unique(Response_Label), collapse = ", ")
+  )
+```
+
+```{r codebook1, echo=FALSE}
+# Replace commas with <br> in Response and Response_Label columns
+data <- codebook_grouped %>%
+  mutate(Response = gsub(", ", "<br>", Response),
+         Response_Label = gsub(", ", "<br>", Response_Label))
+
+# Create an HTML table
+kable(data, format = "html", escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+# -------------------------------------------------------
+# ODK XLSForm Codebook Generator
+# Author: Vincent Katunga-Phiri
+# Date: 2024-03-26
+# Description: Generates a codebook from ODK XLSForm
+# ---
