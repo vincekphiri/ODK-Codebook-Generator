@@ -21,8 +21,6 @@ This repository contains R Markdown code that generates a **codebook** from an *
 ```
 ├── README.md            # Instructions for use
 ├── codebook.Rmd         # R Markdown script
-├── example_form.xlsx    # (Optional) Example XLSForm
-└── outputs/             # Generated codebooks
 ```
 
 ---
