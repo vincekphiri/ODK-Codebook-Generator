@@ -34,7 +34,7 @@ pacman::p_load(tidyverse, readxl, knitr, kableExtra, rmarkdown)
 
 ```{r xlsx_form_load, include=FALSE}
 #Read the Excel file (ODK form)
-file_path <- "C:/Users/vphiri/Documents/OdkCodebookGenerator/OdkCodebookGenerator/OdkCodebookGenerator/BCGC02_Visitsv01.xlsx"
+file_path <- "C:/path"
 survey <- read_excel(file_path, sheet = "survey")
 choices <- read_excel(file_path, sheet = "choices")
 ```
@@ -105,4 +105,5 @@ kable(data, format = "html", escape = FALSE) %>%
 # Author: Vincent Katunga-Phiri
 # Date: 2024-03-26
 # Description: Generates a codebook from ODK XLSForm
+
 # ---
